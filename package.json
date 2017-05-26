@@ -1,0 +1,16 @@
+{
+  "name": "slack-custom-integration-node-sdk-bootstrap",
+  "version": "1.0.0",
+  "description": "Start with this code to build Slack bots with slack-node-sdk",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "author": "Krzysztof Miaskowski",
+  "license": "MIT",
+  "dependencies": {
+    "@slack/client": "^3.8.1",
+    "compromise": "^10.4.2",
+    "hashids": "^1.1.1",
+    "mongodb": "^2.2.27"
+  }
+}
