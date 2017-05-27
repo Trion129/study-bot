@@ -65,7 +65,9 @@ app.post('/', (req, res) => {
   }
   else if(query.startsWith("add-to")){
     //TODO
-    
+    app.post('https://slack.com/api/groups.invite', (req,res) => {
+      console.log(res.group);
+    });
     
     res.end();
   }
@@ -79,7 +81,7 @@ app.post('/', (req, res) => {
           "text":`To set a topic, use '/studybot set [topicname]'. 
                 \nTo get a list of all channels, use '/studybot show-all' 
                 \nTo find a channel belonging to a particular topic, use '/studybot find [topicname]'
-                \n/studybot add-to`
+                \nTo add studybot to a private channel, use /studybot add-to [channelname]`
        }
    ]
     });
