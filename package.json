@@ -1,16 +1,16 @@
 {
-  "name": "slack-custom-integration-node-sdk-bootstrap",
+  "name": "study-group-slack-bot",
   "version": "1.0.0",
-  "description": "Start with this code to build Slack bots with slack-node-sdk",
+  "description": "Slack bot to manage private study groups",
   "scripts": {
-    "start": "node bot.js"
+    "start": "node index.js"
   },
-  "author": "Krzysztof Miaskowski",
+  "author": "Trion and Pankaja",
   "license": "MIT",
   "dependencies": {
-    "@slack/client": "^3.8.1",
+    "body-parser": "^1.17.2",
     "compromise": "^10.4.2",
-    "hashids": "^1.1.1",
+    "express": "^4.15.3",
     "mongodb": "^2.2.27"
   }
 }
