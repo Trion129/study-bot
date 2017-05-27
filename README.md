@@ -1,13 +1,23 @@
-#Minimal slack bot boilerplate code
+# Slack Study Bot
+A Slack bot that allows management of private study groups in a slack team using slash commands.
 
-The purpose of this code is mainly educational. 
-It was created as part of a guide, but can be used to start developing your own bot.
-Also, I wanted to have a running example of a bot build on slack-node-sdk,
- rather than BotKit. 
+### Usage
+```
+/studybot set-topic [topic]
+```
+Sets the topic of private channel and adds it to database
 
-**What this code does?**
+```
+/studybot show-all
+```
+Shows all the private study groups in the team
 
-- listens to bot authentication event
-- gets the bot ID and NAME
-- listens to all messages (from channels and direct messages)
-- replies to ev
+```
+/studybot find [topic]
+```
+Finds the study-group with the given topic
+
+```
+/studybot add-to [channel]
+```
+Shows a button to directly enter the study-group with invite link
