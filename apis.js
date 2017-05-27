@@ -2,18 +2,27 @@ var MongoClient = require('mongodb').MongoClient;
 var nlp = require('compromise')
 
 /* Takes the group and adds to database
- * teamName : {string} : name of slack team
- * channelName : {string} : name of channel aka study-group
- * topic : {string} : topic for that study-group
+ * input: {object} : data as fields
+ * {
+ *   teamName : {string} : name of slack team
+ *   channelName : {string} : name of channel aka study-group
+ *   topic : {string} : topic for that study-group
+ *   channelId : {string} : Id of channel
+ * }
  */
-exports.addGroup = (teamName, channelName, topic) => {
+exports.setTopic = (input) => {
+  // Format data for mongodb
   let data = {
-    "slack-team": teamName,
-    "channel-name": channelName,
-    "topic": topic
+    "slack-team": input.teamName,
+    "channel-name": input.channelName,
+    "topic": input.topic,
+    "channel-id": input.channelId
   }
   MongoClient.connect(process.env.MONGO_URL, (err, db) => {
-    db.collection('study-groups').insertOne(data, function(err, result){
+    db.collection('study-groups').updateOne({
+        "slack-team": input.teamName,
+        "channel-name": input.channelName
+      }, data, {upsert:true, w: 1}, function(err, result){
       if(err != null){
         console.log("Error happened :(");
       }
@@ -29,16 +38,21 @@ exports.addGroup = (teamName, channelName, topic) => {
  */
 exports.queryTopic = (teamName, topic, callback) => {
   MongoClient.connect(process.env.MONGO_URL, (err, db) => {
+    db.collection('study-groups').createIndex(
+      {
+        "topic":"text"
+      });
     db.collection('study-groups').find({
       "slack-team": teamName,
-      "topic": {
-        "$text": {
-          "$search" : topic 
-        }
+      $text: {
+        $search : topic 
       }
     }).toArray((err, docs) => {
-      if(err != null){
+      if(err == null){
         callback(docs);
+      }
+      else{
+        console.log(err);
       }
       db.close();
     });
@@ -55,8 +69,11 @@ exports.queryAll = (teamName, callback) => {
     db.collection('study-groups').find({
       "slack-team": teamName,
     }).toArray((err, docs) => {
-      if(err != null){
+      if(err == null){
         callback(docs);
+      }
+      else{
+        console.log(err);
       }
       db.close();
     });
