@@ -72,6 +72,9 @@ exports.queryAll = (teamName, callback) => {
       if(err == null){
         callback(docs);
       }
+      else{
+        console.log(err);
+      }
       db.close();
     });
   });

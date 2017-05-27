@@ -45,9 +45,15 @@ app.post('/', (req, res) => {
   }
   else if(query.startsWith("find")){
     //TODO
-    let topic = query.substr(5);
+    let topic = query.substr(5).toLowerCase();
     apis.queryTopic(req.body.team_domain, topic, (groups) => {
       let reply = "Channel\t-\tTopic\n";
+      if(groups.length == 0){
+        res.json({
+        text: "Topic named " + topic + " not found"
+      });
+      res.end();
+      }
       groups.forEach((group)=>{
         reply += `${group["channel-name"]}\t-\t${group.topic}\n`
       });
