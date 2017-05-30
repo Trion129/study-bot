@@ -8,9 +8,12 @@
   "author": "Trion and Pankaja",
   "license": "MIT",
   "dependencies": {
+    "async": "^2.4.1",
     "body-parser": "^1.17.2",
     "compromise": "^10.4.2",
     "express": "^4.15.3",
-    "mongodb": "^2.2.27"
+    "mongodb": "^2.2.27",
+    "request": "^2.81.0",
+    "request-promise": "^4.2.1"
   }
 }
