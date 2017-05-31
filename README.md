@@ -20,4 +20,4 @@ Finds the study-group with the given topic
 ```
 /studybot add-to [channel]
 ```
-Shows a button to directly enter the study-group with invite link
+Directly enter the study-group

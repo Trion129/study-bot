@@ -47,8 +47,9 @@ exports.queryTopic = (teamName, topic, callback) => {
     
     db.collection('study-groups').find({
       "slack-team": teamName,
-      $text: {
-        $search : topic 
+      "topic": {
+        $regex : topic,
+        $options: "$i"
       }
     }).toArray((err, docs) => {
       
