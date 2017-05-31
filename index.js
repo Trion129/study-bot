@@ -22,16 +22,20 @@ app.post('/', (req, res) => {
   if(query.startsWith("set")){
     let topic = query.substr(4);
     console.log(req.body);
+    
+    if(req.body.channel_name != 'privategroup'){
+      res.end('The channel is public, already easy to join via channel list');
+    }
+    
      // if channel exists in db, get token using getChannel, to prevent multiple user authentications for same channel.
     database.getChannel(req.body.team_domain, req.body.channel_id, (err, channel) => {
-      console.log(err,channel);
       if(err === 404){
         // Channel doesnt exist in db. need to give link to add-to-slack
         database.getToken(req.body.team_id, req.body.user_id, (err, AUTH_TOKEN) => {
           // Hasn't authorised
           if(err === 404){
             // TODO MAKE THIS A BUTTON!
-            res.send("You need to authorize us for seeing your private channels and invite people"); 
+            res.send("You need to authorize us for seeing your private channels and invite people");
             res.end();
             return;
           }
@@ -128,13 +132,13 @@ app.post('/', (req, res) => {
   else{
     res.json({
       "response_type": "ephemeral",
-      "text": "How to use /studybot",
+      "text": "How to use /sns",
        "attachments":[
        {
-          "text":`To set a topic, use '/studybot set [topicname]'. 
-                \nTo get a list of all channels, use '/studybot show-all' 
-                \nTo find a channel belonging to a particular topic, use '/studybot find [topicname]'
-                \nTo add studybot to a private channel, use /studybot add-to [channelname]`
+          "text":`To set a topic, use '/sns set [topicname]'. 
+                \nTo get a list of all private channels, use '/sns show-all' 
+                \nTo find a private channel belonging to a particular topic, use '/sns find [topicname]'
+                \nTo add studybot to a private channel, use /sns add-to [channelname]`
        }
     ]});
     res.end();
