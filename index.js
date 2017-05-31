@@ -8,16 +8,13 @@ const app = express();
 app.use(bodyParser.json()); 
 app.use(bodyParser.urlencoded({ extended: true }));
 
-
-
 app.post('/', (req, res) => {
   let query = req.body.text;
 
   if(req.body.token != process.env.TOKEN && !req.body.team_domain){
-    res.end();
+    res.end('3rd party api requests not allowed... creepy!');
     return;
   }
-
 
   if(query.startsWith("set")){
     let topic = query.substr(4);
@@ -25,6 +22,7 @@ app.post('/', (req, res) => {
     
     if(req.body.channel_name != 'privategroup'){
       res.end('The channel is public, already easy to join via channel list');
+      return;
     }
     
      // if channel exists in db, get token using getChannel, to prevent multiple user authentications for same channel.
@@ -34,8 +32,9 @@ app.post('/', (req, res) => {
         database.getToken(req.body.team_id, req.body.user_id, (err, AUTH_TOKEN) => {
           // Hasn't authorised
           if(err === 404){
-            // TODO MAKE THIS A BUTTON!
-            res.send("You need to authorize us for seeing your private channels and invite people");
+            res.send(`You need to authorize us for seeing your private channels and inviting people\n
+                      Please do it <https://goo.gl/MidmzM|here>\n
+                      https://goo.gl/MidmzM`);
             res.end();
             return;
           }
@@ -53,17 +52,34 @@ app.post('/', (req, res) => {
   }
   else if(query.startsWith("show-all")){
     database.queryAll(req.body.team_domain, (groups)=>{
-      let reply = "Channel\t-\tTopic\n";
+      let channelList = '';
+      let channelTopics = '';
+      let fallback = `Channels\t-\tTopic`;
+      
+      //console.log(groups);
       groups.forEach((group)=>{
-        reply += `${group["channel-name"]}\t-\t${group.topic}\n`
+        channelList += `${group["channel-name"]}\n`;
+        channelTopics += `${group.topic}\n`;
+        fallback += `${group["channel-name"]}\t-\t${group.topic}`;
       });
       res.json({
-        "response_type": "ephemeral",
-      "text": "List of all channels",
-       "attachments":[
-         {
-        text: reply
-         }]
+        attachments: [{
+          color: "#7353BA",
+          fallback: fallback,
+          text: "Showing all Study groups:",
+          fields: [
+            {
+              "title": "Channel",
+              "value": channelList,
+              "short": true
+            },
+            {
+              "title": "Topic",
+              "value": channelTopics,
+              "short": true
+            }
+          ]
+        }]
       });
       res.end();
     });
@@ -72,7 +88,6 @@ app.post('/', (req, res) => {
   else if(query.startsWith("find")){
     let topic = query.substr(5);
     database.queryTopic(req.body.team_domain, topic, (groups) => {
-      let reply = "Channel\t-\tTopic\n";
       if(groups.length == 0){
         res.json({
           text: "Topic named " + topic + " not found"
@@ -80,14 +95,34 @@ app.post('/', (req, res) => {
         res.end();
         return;
       }
+      
+      let channelList = '';
+      let channelTopics = '';
+      let fallback = `Channels\t-\tTopic`;
+      
       //console.log(groups);
       groups.forEach((group)=>{
-        reply += `${group["channel-name"]}\t-\t${group.topic}\n`
+        channelList += `${group["channel-name"]}\n`;
+        channelTopics += `${group.topic}\n`;
+        fallback += `${group["channel-name"]}\t-\t${group.topic}`;
       });
       res.json({
-        text: "Details of channels(s) belonging to the topic - " + topic + " :",
         attachments: [{
-        text: reply
+          color: "#7353BA",
+          fallback: fallback,
+          text: "Showing all Study groups:",
+          fields: [
+            {
+              "title": "Channel",
+              "value": channelList,
+              "short": true
+            },
+            {
+              "title": "Topic",
+              "value": channelTopics,
+              "short": true
+            }
+          ]
         }]
       });
       res.end();
@@ -112,15 +147,14 @@ app.post('/', (req, res) => {
           group = JSON.parse(group);
           
           if(group["already_in_group"]){
-            res.json({text:"You are already in the group"});
+            res.end("You are already in the group");
           }
           else if (group.ok){
-            res.json({text: "Successfully added you to the group :) "});
+            res.end("Successfully added you to the group :) ");
           }
           else {
-            res.json({text: "Could not add you to the group :( Contact group members. "})
+            res.end("Could not add you to the group :( Contact group members. ")
           }
-          res.end();
         });
        }
        else{
@@ -147,8 +181,7 @@ app.post('/', (req, res) => {
 
 app.get('/', (req, res) => {
   // Show a cute slack button
-  res.end(`<a href="https://slack.com/oauth/authorize?&client_id=148122814833.188492009009
-            &scope=commands,groups:write,groups:read,channels:write,channels:read,chat:write:bot,team:read">
+  res.end(`<a href="https://goo.gl/MidmzM">
             <img alt="Add to Slack" height="40" width="139" 
             src="https://platform.slack-edge.com/img/add_to_slack.png" 
             srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x,

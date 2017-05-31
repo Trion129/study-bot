@@ -18,3 +18,7 @@ Shows all the private study groups in the team
 ```
 Finds the study-group with the given topic. Shows a list of creator and 2 most active members of the study-group. Users can DM any of them to join the study-group.
 
+```
+/studybot add-to [channel]
+```
+Directly enter the study-group
