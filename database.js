@@ -178,3 +178,41 @@ exports.getChannelInfo = (team_name, channel_name, callback) => {
   });
 }
 
+/* Check team exists
+ * team_id : {string} : Team domain name
+ * callback : {function (err, string)} : Function to handle the token
+ */
+exports.checkTeam = (team_id, callback) => {
+  MongoClient.connect(process.env.MONGO_URL, (err, db) => {
+    db.collection('slack_user_tokens').findOne({
+      "team-id": team_id
+    }).then((data)=>{
+      if(!data){
+        callback(404, null);
+        return;
+      }
+      callback(null, data.token);
+    })
+  });  
+}
+
+exports.removeChannel = (input) => {
+  let data = {
+    "slack-team": input.teamName,
+    "channel-id": input.channelId
+  }
+  
+  MongoClient.connect(process.env.MONGO_URL, (err, db) => {
+    db.collection('study-groups').updateOne({
+        "slack-team": input.teamName,
+        "channel-name": input.channelName
+      }, data, {upsert:true, w: 1}, (err, result) => {
+      
+      if(err != null){
+        console.log("Error happened :(", err);
+      }
+      
+      db.close();  
+    })
+  });
+}

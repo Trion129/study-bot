@@ -1,7 +1,6 @@
 const express = require("express");
 const bodyParser = require('body-parser');
 const database = require("./database.js");
-const asynclib = require("async");
 const helpers = require("./helpers.js");
 
 const app = express();
@@ -15,168 +14,208 @@ app.post('/', (req, res) => {
     res.end('3rd party api requests not allowed... creepy!');
     return;
   }
-
-  if(query.startsWith("set")){
-    let topic = query.substr(4);
-    console.log(req.body);
-    
-    if(req.body.channel_name != 'privategroup'){
-      res.end('The channel is public, already easy to join via channel list');
-      return;
+  
+  database.checkTeam(req.body.team_id, (err) => {
+    if(err == 404){
+      res.end('Your team is not authorised, do it <https://goo.gl/MidmzM|here>');
     }
-    
-     // if channel exists in db, get token using getChannel, to prevent multiple user authentications for same channel.
-    database.getChannel(req.body.team_domain, req.body.channel_id, (err, channel) => {
-      if(err === 404){
-        // Channel doesnt exist in db. need to give link to add-to-slack
-        database.getToken(req.body.team_id, req.body.user_id, (err, AUTH_TOKEN) => {
-          // Hasn't authorised
-          if(err === 404){
-            res.send(`You need to authorize us for seeing your private channels and inviting people\n
-                      Please do it <https://goo.gl/MidmzM|here>\n
-                      https://goo.gl/MidmzM`);
-            res.end();
-            return;
-          }
-          
-          //Has authorised
-          helpers.addToDB(AUTH_TOKEN, topic, req, res);
-        })
+    else if(err){
+      res.end('Service seems to be down');
+    }
+    else{
+      if(query.startsWith("set")){
+      let topic = query.substr(4);
+      if(topic.length > 28){
+        res.end("Topic is too long");
         return;
       }
-      
-      // Channel already exists, use the token
-      const AUTH_TOKEN = channel['auth-key'];
-      helpers.addToDB(AUTH_TOKEN, topic, req, res);
-    }); 
-  }
-  else if(query.startsWith("show-all")){
-    database.queryAll(req.body.team_domain, (groups)=>{
-      let channelList = '';
-      let channelTopics = '';
-      let fallback = `Channels\t-\tTopic`;
-      
-      //console.log(groups);
-      groups.forEach((group)=>{
-        channelList += `${group["channel-name"]}\n`;
-        channelTopics += `${group.topic}\n`;
-        fallback += `${group["channel-name"]}\t-\t${group.topic}`;
-      });
-      res.json({
-        attachments: [{
-          color: "#7353BA",
-          fallback: fallback,
-          text: "Showing all Study groups:",
-          fields: [
-            {
-              "title": "Channel",
-              "value": channelList,
-              "short": true
-            },
-            {
-              "title": "Topic",
-              "value": channelTopics,
-              "short": true
+      if(topic.length === 0){
+        res.end("Topic is needed");
+        return;
+      }
+
+      if(req.body.channel_name != 'privategroup'){
+        res.end('The channel is public, already easy to join via channel list');
+        return;
+      }
+
+      // if channel exists in db, get token using getChannel, to prevent multiple user authentications for same channel.
+      database.getChannel(req.body.team_domain, req.body.channel_id, (err, channel) => {
+        if(err === 404){
+          // Channel doesnt exist in db. need to give link to add-to-slack
+          database.getToken(req.body.team_id, req.body.user_id, (err, AUTH_TOKEN) => {
+            // Hasn't authorised
+            if(err === 404){
+              res.json({
+                attachments: [
+                  {
+                    color: "#7353BA",
+                    text:"You need to authorize us for seeing your private channels and inviting people\n"+
+                         "Please do it <https://goo.gl/MidmzM|here>\n"
+                  }
+                ]
+              });
+
+              res.end();
+              return;
             }
-          ]
-        }]
-      });
-      res.end();
-    });
-  }
-  
-  else if(query.startsWith("find")){
-    let topic = query.substr(5);
-    database.queryTopic(req.body.team_domain, topic, (groups) => {
-      if(groups.length == 0){
+
+            //Has authorised
+            helpers.addToDB(AUTH_TOKEN, topic, req, res);
+          });
+          return;
+        }
+
+        // Channel already exists, use the token
+        const AUTH_TOKEN = channel['auth-key'];
+        helpers.addToDB(AUTH_TOKEN, topic, req, res);
+      }); 
+    }
+    else if(query.startsWith("show-all")){
+      database.queryAll(req.body.team_domain, (groups)=>{
+        let channelList = '';
+        let channelTopics = '';
+        let fallback = `Channels\t-\tTopic`;
+
+        groups.forEach((group)=>{
+          channelList += `${group["channel-name"]}\n`;
+          channelTopics += `${group.topic}\n`;
+          fallback += `${group["channel-name"]}\t-\t${group.topic}`;
+        });
         res.json({
-          text: "Topic named " + topic + " not found"
+          attachments: [{
+            color: "#7353BA",
+            fallback: fallback,
+            text: "Showing all Study groups:",
+            fields: [
+              {
+                "title": "Channel",
+                "value": channelList,
+                "short": true
+              },
+              {
+                "title": "Topic",
+                "value": channelTopics,
+                "short": true
+              }
+            ]
+          }]
         });
         res.end();
-        return;
-      }
-      
-      let channelList = '';
-      let channelTopics = '';
-      let fallback = `Channels\t-\tTopic`;
-      
-      //console.log(groups);
-      groups.forEach((group)=>{
-        channelList += `${group["channel-name"]}\n`;
-        channelTopics += `${group.topic}\n`;
-        fallback += `${group["channel-name"]}\t-\t${group.topic}`;
       });
-      res.json({
-        attachments: [{
-          color: "#7353BA",
-          fallback: fallback,
-          text: "Showing all Study groups:",
-          fields: [
-            {
-              "title": "Channel",
-              "value": channelList,
-              "short": true
-            },
-            {
-              "title": "Topic",
-              "value": channelTopics,
-              "short": true
-            }
-          ]
-        }]
-      });
-      res.end();
-    });
-  }
-  
-  else if(query.startsWith("add-to")){
-    let channelname = query.substr(7);
-    
-    //get channel_id and auth-key from db using getChannelInfo. 
-     database.getChannelInfo(req.body.team_domain, channelname, (err, group) => {
-      
-      //add user to group, if group exists in the database
-      if(group){
-        helpers.slack('groups.invite', 
-        {
-          token: group['auth-key'],
-          channel: group["channel-id"],
-          user: req.body.user_id
-        }).then((group) => {
-          
-          group = JSON.parse(group);
-          
-          if(group["already_in_group"]){
-            res.end("You are already in the group");
-          }
-          else if (group.ok){
-            res.end("Successfully added you to the group :) ");
-          }
-          else {
-            res.end("Could not add you to the group :( Contact group members. ")
-          }
+    }
+
+    else if(query.startsWith("find")){
+      let topic = query.substr(5);
+      database.queryTopic(req.body.team_domain, topic, (groups) => {
+        if(groups.length == 0){
+          res.json({
+            text: "Topic named " + topic + " not found"
+          });
+          res.end();
+          return;
+        }
+
+        let channelList = '';
+        let channelTopics = '';
+        let fallback = `Channels\t-\tTopic`;
+
+        groups.forEach((group)=>{
+          channelList += `${group["channel-name"]}\n`;
+          channelTopics += `${group.topic}\n`;
+          fallback += `${group["channel-name"]}\t-\t${group.topic}`;
         });
-       }
-       else{
-         res.json({text: "Group not found in database."});
-         res.end();
-       }       
-    });
-  }
-  else{
-    res.json({
-      "response_type": "ephemeral",
-      "text": "How to use /sns",
-       "attachments":[
-       {
-          "text":`To set a topic, use '/sns set [topicname]'. 
-                \nTo get a list of all private channels, use '/sns show-all' 
-                \nTo find a private channel belonging to a particular topic, use '/sns find [topicname]'
-                \nTo add studybot to a private channel, use /sns add-to [channelname]`
-       }
-    ]});
-    res.end();
-  }
+        res.json({
+          attachments: [{
+            color: "#7353BA",
+            fallback: fallback,
+            text: "Showing all Study groups:",
+            fields: [
+              {
+                "title": "Channel",
+                "value": channelList,
+                "short": true
+              },
+              {
+                "title": "Topic",
+                "value": channelTopics,
+                "short": true
+              }
+            ]
+          }]
+        });
+        res.end();
+      });
+    }
+
+    else if(query.startsWith("add-to")){
+      let channelname = query.substr(7);
+
+      //get channel_id and auth-key from db using getChannelInfo. 
+       database.getChannelInfo(req.body.team_domain, channelname, (err, group) => {
+
+        //add user to group, if group exists in the database
+        if(group){
+          helpers.slack('groups.invite', 
+          {
+            token: group['auth-key'],
+            channel: group["channel-id"],
+            user: req.body.user_id
+          }).then((group) => {
+
+            group = JSON.parse(group);
+
+            if(group["already_in_group"]){
+              res.end("You are already in the group");
+            }
+            else if (group.ok){
+              res.end("Successfully added you to the group :) ");
+            }
+            else {
+              if (req.body.channel_name !== "privategroup"){
+                res.json({
+                  response_type: 'in_channel',
+                  attachments: [
+                    {
+                      colour: "#7353BA",
+                      text: "<@"+req.body.user_id+"> wants to join `#"+channelname+"` but authorisation for team has expired\n"+
+                            "Tell the members of the channel to use `/sns set` to reauthorise",
+                      mrkdwn_in: ["text"]
+                    }
+                  ]
+                });
+                res.end();
+              }
+              else{
+                res.end("Could not add you to the group :( Contact group members. ")
+              }
+            }
+          });
+         }
+         else{
+           res.json({text: "Group not found in database."});
+           res.end();
+         }       
+      });
+    }
+    else{
+      res.json({
+        "response_type": "ephemeral",
+        "text": "How to use /sns",
+         "attachments":[
+         {
+            color: "#7353BA",
+            "text": "To set a topic, use `/sns set [topicname]`"+
+                    "\nTo get a list of all private channels, use `/sns show-all`"+
+                    "\nTo find a private channel belonging to a particular topic, use `/sns find [topicname]`"+
+                    "\nTo add studybot to a private channel, use `/sns add-to [channelname]`",
+             mrkdwn_in: ["text"]
+         }
+      ]});
+      res.end();
+    }  
+    }
+  })
 });
 
 app.get('/', (req, res) => {
@@ -209,15 +248,7 @@ app.get('/auth', (req, res) => {
     
     // Meanwhile store the {team -> token}
     database.storeToken(team_name, team_id, user, token);
-    
-    // Get Team Info for future reference to token
-    helpers.slack('team.info', {token: token})
-    .then((body) => {
-      let team = JSON.parse(body).team.domain;
-
-      // Take the User to their team's slack
-      res.redirect(`http://${team}.slack.com`);
-    }).catch(res.end);
+    res.redirect(`https://pankaja-shree.github.io/sns-splash/redirect.html`);
   }).catch(res.end);
 })
 
