@@ -22,7 +22,6 @@ const addToDB = (AUTH_TOKEN, topic, req, res) => {
     if(!data.ok){
       res.end('The channel is public, already easy to join via channel list');
     }
-    console.log(data);
     database.setTopic({
       teamName: req.body.team_domain,
       channelName: data.group.name,
@@ -33,7 +32,7 @@ const addToDB = (AUTH_TOKEN, topic, req, res) => {
 
     res.json({
       response_type: 'in_channel',
-      text: `Topic of channel set to \`${topic}\` by ${req.body.user_name}`
+      text: `Channel is about topic \`${topic}\` - set by ${req.body.user_name}`
     });
     res.end();
   });
